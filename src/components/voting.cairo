@@ -27,6 +27,8 @@ pub mod VotingComponent {
         }
         fn vote(ref self: ComponentState<TContractState>, support: bool) {}
         fn resolve_poll(ref self: ComponentState<TContractState>, id: u256) {}
-        fn get_poll(self: @ComponentState<TContractState>, id: u256) {}
+        fn get_poll(self: @ComponentState<TContractState>, id: u256) -> Poll {
+            Default::default()
+        }
     }
 }

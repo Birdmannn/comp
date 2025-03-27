@@ -5,7 +5,7 @@ pub trait IVote<TContractState> {
     fn create_poll(ref self: TContractState, name: ByteArray, desc: ByteArray) -> u256;
     fn vote(ref self: TContractState, support: bool);
     fn resolve_poll(ref self: TContractState, id: u256);
-    fn get_poll(self: @TContractState, id: u256);
+    fn get_poll(self: @TContractState, id: u256) -> Poll;
 }
 
 #[derive(Drop, Clone, Default, Serde, PartialEq, starknet::Store)]
