@@ -4,6 +4,7 @@ pub mod VotingComponent {
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_caller_address};
+    use crate::components::sales::{SalesImpl, SalesStatus};
     use crate::interfaces::voting::{DEFAULT_THRESHOLD, IVote, Poll, PollTrait, Voted};
 
     #[storage]
@@ -11,6 +12,7 @@ pub mod VotingComponent {
         pub polls: Map<u256, Poll>,
         pub voters: Map<(ContractAddress, u256), bool>,
         pub nonce: u256,
+        pub sales: SalesImpl,
     }
 
     #[event]
@@ -24,13 +26,14 @@ pub mod VotingComponent {
         TContractState, +HasComponent<TContractState>,
     > of IVote<ComponentState<TContractState>> {
         fn create_poll(
-            ref self: ComponentState<TContractState>, name: ByteArray, desc: ByteArray,
+            ref self: ComponentState<TContractState>, name: ByteArray, desc: ByteArray,item_id: u256
         ) -> u256 {
             let id = self.nonce.read() + 1;
             assert(name != "" && desc != "", 'NAME OR DESC IS EMPTY');
             let mut poll: Poll = Default::default();
             poll.name = name;
             poll.desc = desc;
+            poll.linked_item = item_id;
             self.polls.entry(id).write(poll);
             self.nonce.write(id);
             id
@@ -46,7 +49,16 @@ pub mod VotingComponent {
 
             match support {
                 true => poll.yes_votes += 1,
-                _ => poll.no_votes += 1,
+                false => {
+                    poll.no_votes += 1;
+                    // Check if this "no" vote caused the threshold to be reached
+                    let vote_count = poll.yes_votes + poll.no_votes;
+                    if vote_count >= DEFAULT_THRESHOLD && poll.no_votes > poll.yes_votes {
+                        // Immediately trigger sale if voting failed
+                        self.sales.sell(poll.linked_item);
+                        poll.status = PollStatus::Finished(false);
+                    }
+                }
             }
 
             let vote_count = poll.yes_votes + poll.no_votes;
