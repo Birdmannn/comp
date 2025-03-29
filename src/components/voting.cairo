@@ -8,15 +8,15 @@ pub mod VotingComponent {
 
     #[storage]
     pub struct Storage {
-        polls: Map<u256, Poll>,
-        voters: Map<(ContractAddress, u256), bool>,
-        nonce: u256,
+        pub polls: Map<u256, Poll>,
+        pub voters: Map<(ContractAddress, u256), bool>,
+        pub nonce: u256,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
-        Voted: Voted,
+        Voted: Voted
     }
 
     #[embeddable_as(VotingImpl)]
@@ -27,8 +27,8 @@ pub mod VotingComponent {
             ref self: ComponentState<TContractState>, name: ByteArray, desc: ByteArray,
         ) -> u256 {
             let id = self.nonce.read() + 1;
-            let mut poll: Poll = Default::default();
             assert(name != "" && desc != "", 'NAME OR DESC IS EMPTY');
+            let mut poll: Poll = Default::default();
             poll.name = name;
             poll.desc = desc;
             self.polls.entry(id).write(poll);
@@ -51,17 +51,14 @@ pub mod VotingComponent {
 
             let vote_count = poll.yes_votes + poll.no_votes;
             if vote_count >= DEFAULT_THRESHOLD {
-                // self._resolve_poll(poll)
                 poll.resolve();
             }
+
+            self.polls.entry(id).write(poll);
             self.voters.entry((caller, id)).write(true);
             self.emit(Voted { id, voter: caller });
         }
 
-        fn resolve_poll(ref self: ComponentState<TContractState>, id: u256) {
-            let mut poll = self.polls.entry(id).read();
-            poll.resolve();
-        }
         fn get_poll(self: @ComponentState<TContractState>, id: u256) -> Poll {
             self.polls.entry(id).read()
         }

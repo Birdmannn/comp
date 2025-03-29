@@ -4,7 +4,7 @@ use starknet::ContractAddress;
 pub trait IVote<TContractState> {
     fn create_poll(ref self: TContractState, name: ByteArray, desc: ByteArray) -> u256;
     fn vote(ref self: TContractState, support: bool, id: u256);
-    fn resolve_poll(ref self: TContractState, id: u256);
+    // fn resolve_poll(ref self: TContractState, id: u256);
     fn get_poll(self: @TContractState, id: u256) -> Poll;
 }
 
@@ -20,7 +20,7 @@ pub struct Poll {
 #[generate_trait]
 pub impl PollImpl of PollTrait {
     fn resolve(ref self: Poll) {
-        assert(self.no_votes + self.yes_votes >= DEFAULT_THRESHOLD, 'COULD NOT RESOLVE');
+        assert(self.yes_votes + self.no_votes >= DEFAULT_THRESHOLD, 'COULD NOT RESOLVE');
         let mut status = false;
         if self.yes_votes > self.no_votes {
             status = true;
