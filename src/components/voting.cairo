@@ -1,3 +1,5 @@
+use crate::components::sales::{SalesComponent, SalesTerm};
+
 #[starknet::component]
 pub mod VotingComponent {
     use starknet::storage::{
@@ -37,27 +39,34 @@ pub mod VotingComponent {
         }
 
         fn vote(ref self: ComponentState<TContractState>, support: bool, id: u256) {
-            let mut poll = self.polls.entry(id).read();
-            assert(poll != Default::default(), 'INVALID POLL');
-            assert(poll.status == Default::default(), 'POLL NOT PENDING');
-            let caller = get_caller_address();
-            let has_voted = self.voters.entry((caller, id)).read();
-            assert(!has_voted, 'CALLER HAS VOTED');
+    let mut poll = self.polls.entry(id).read();
+    assert(poll != Default::default(), 'INVALID POLL');
+    assert(poll.status == Default::default(), 'POLL NOT PENDING');
+    let caller = get_caller_address();
+    let has_voted = self.voters.entry((caller, id)).read();
+    assert(!has_voted, 'CALLER HAS VOTED');
 
-            match support {
-                true => poll.yes_votes += 1,
-                _ => poll.no_votes += 1,
-            }
+    match support {
+        true => poll.yes_votes += 1,
+        _ => {
+            poll.no_votes += 1;
 
-            let vote_count = poll.yes_votes + poll.no_votes;
-            if vote_count >= DEFAULT_THRESHOLD {
-                poll.resolve();
-            }
-
-            self.polls.entry(id).write(poll);
-            self.voters.entry((caller, id)).write(true);
-            self.emit(Voted { id, voter: caller });
+            // ❗ If voting fails, sell the item
+            let mut sales = SalesComponent::new();
+            sales.sell(id);
         }
+    }
+
+    let vote_count = poll.yes_votes + poll.no_votes;
+    if vote_count >= DEFAULT_THRESHOLD {
+        poll.resolve();
+    }
+
+    self.polls.entry(id).write(poll);
+    self.voters.entry((caller, id)).write(true);
+    self.emit(Voted { id, voter: caller });
+}
+
 
         fn get_poll(self: @ComponentState<TContractState>, id: u256) -> Poll {
             self.polls.entry(id).read()
