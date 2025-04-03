@@ -15,6 +15,7 @@ pub struct Poll {
     pub yes_votes: u256,
     pub no_votes: u256,
     pub status: PollStatus,
+    pub linked_item: u256,
 }
 
 #[generate_trait]
