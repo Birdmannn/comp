@@ -9,11 +9,17 @@ pub trait ISales<TContractState> {
 }
 
 #[derive(Drop, Copy, Default, Serde, PartialEq, starknet::Store)]
+
 pub enum SalesStatus {
     #[default]
     None,
     Bought,
     Sold,
+}
+
+#[storage]
+pub struct Storage {
+    sales_status: Map<u256, SalesStatus>,
 }
 
 

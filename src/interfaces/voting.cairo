@@ -34,6 +34,7 @@ pub enum PollStatus {
     #[default]
     Pending,
     Finished: bool,
+    
 }
 
 #[derive(Drop, starknet::Event)]
