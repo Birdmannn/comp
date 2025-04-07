@@ -1,4 +1,3 @@
-
 use starknet::ContractAddress;
 
 #[starknet::interface]
@@ -9,7 +8,6 @@ pub trait ISales<TContractState> {
 }
 
 #[derive(Drop, Copy, Default, Serde, PartialEq, starknet::Store)]
-
 pub enum SalesStatus {
     #[default]
     None,
@@ -17,24 +15,19 @@ pub enum SalesStatus {
     Sold,
 }
 
-#[storage]
-pub struct Storage {
-    sales_status: Map<u256, SalesStatus>,
+
+#[derive(Drop, starknet::Event)]
+pub struct BuyEvent {
+    #[key]
+    pub id: u256,
+    #[key]
+    pub buyer: ContractAddress,
 }
 
-
-    #[derive(Drop, starknet::Event)]
-    pub struct BuyEvent {
-        #[key]
-        pub id: u256,
-        #[key]
-        pub buyer: ContractAddress,
-    }
-
-    #[derive(Drop, starknet::Event)]
-    pub struct SellEvent {
-        #[key]
-        pub id: u256,
-        #[key]
-        pub seller: ContractAddress,
-    }
+#[derive(Drop, starknet::Event)]
+pub struct SellEvent {
+    #[key]
+    pub id: u256,
+    #[key]
+    pub seller: ContractAddress,
+}

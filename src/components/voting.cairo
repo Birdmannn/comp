@@ -5,24 +5,27 @@ pub mod VotingComponent {
     };
     use starknet::{ContractAddress, get_caller_address};
     use crate::components::sales::SalesComponent;
-    use crate::interfaces::voting::{DEFAULT_THRESHOLD, IVote, Poll,Voted, PollTrait};
     use crate::interfaces::sales::ISales;
+    use crate::interfaces::voting::{DEFAULT_THRESHOLD, IVote, Poll, PollTrait, PollStatus, Voted};
     #[storage]
     pub struct Storage {
         pub polls: Map<u256, Poll>,
         pub voters: Map<(ContractAddress, u256), bool>,
         pub nonce: u256,
+        pub sales_targets: Map<u256, u256>,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
-        Voted: Voted
+        Voted: Voted,
     }
 
     #[embeddable_as(VotingImpl)]
     pub impl Voting<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+        TContractState,
+        +HasComponent<TContractState>,
+        +Drop<TContractState>,
         impl Sales: SalesComponent::HasComponent<TContractState>,
     > of IVote<ComponentState<TContractState>> {
         fn create_poll(
@@ -52,13 +55,18 @@ pub mod VotingComponent {
             }
 
             let vote_count = poll.yes_votes + poll.no_votes;
+
             if vote_count >= DEFAULT_THRESHOLD {
                 poll.resolve();
-            }  else {
-                 let mut sales_comp = get_dep_component_mut!(ref self, Sales);
-                ISales::sell(sales_comp,id);
+
+                if poll.status == PollStatus::Finished(false) {
+                    let item_id = self.sales_targets.entry(id).read();
+                    if item_id != 0 {
+                        let mut sales_comp = get_dep_component_mut!(ref self, Sales);
+                        sales_comp.sell(item_id);
+                    }
+                }
             }
-            
 
             self.polls.entry(id).write(poll);
             self.voters.entry((caller, id)).write(true);
