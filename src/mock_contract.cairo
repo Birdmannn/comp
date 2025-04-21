@@ -15,6 +15,4 @@ pub mod MockContract {
         #[flat]
         VotingEvent: VotingComponent::Event,
     }
-
-    
 }
